@@ -1,0 +1,126 @@
+{% assign today = 'Now' | Date:'yyyy-MM-dd' %}
+{% assign campusGuid = PageParameter.CampusGuid %}
+
+{% capture demoAttendancesJson %}[{"Occurrence":{"OccurrenceDate":"2022-06-08","Group":{"Name":"GroupName"}},"Schedule":{"Name":"ScheduleName"},"ScheduledByPersonAlias":{"Person":{"FullName":"Scheduler FullName"}},"PersonAlias":{"Person":{"NickName":"Person Nickname"}},"Id":0}]{% endcapture %}
+{% assign Attendances = demoAttendancesJson | FromJSON %}
+{% assign Attendance = Attendances | First %}
+
+{%- assign channelId = 13 -%}{% comment %}Content Channel Id that was set on the content channel{% endcomment %}
+
+{%- capture liveItemId %}{[ groupscheduleitem channelid:'{{ channelId }}' campusguid:'{{ campusGuid }}' ]}{% endcapture -%}
+{%- assign renderedItemId = PageParameter.ItemId | AsInteger | WithFallback:'','' | Default:liveItemId -%}
+
+{%- assign currentPage = 'Global' | Page:'Path' -%}
+{%- assign oldQuerystring = 'Global' | Page:'QueryString' | RemoveFromDictionary:'ItemId' | AddToDictionary:'ItemId', liveItemId -%}
+
+{%- capture newQuerystring -%}
+    {%- for qp in oldQuerystring -%}
+        {%- assign kv = qp | PropertyToKeyValue -%}
+        {{- kv.Key | Prepend:'&' -}}={{- kv.Value -}}
+    {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture liveItemUrl -%}{{- currentPage -}}{{- newQuerystring | ReplaceFirst:'&','?' -}}{%- endcapture -%}
+
+{%- assign editTemplateUrl = 966 | PageRoute:'ContentItemId=' -%}
+
+{%- contentchannelitem id:'{{ renderedItemId }}' -%}
+    {%- assign renderedItemTest = contentchannelitem -%}
+{%- endcontentchannelitem -%}
+
+
+<div class="panel panel-block">
+    <div class="panel-heading">
+
+        <h3 class="panel-title">
+            <i class="fa fa-eye"></i>
+            View Template
+        </h3>
+
+        <div class="pull-right">
+            {% if campusGuid %}
+                {% if renderedItemId == liveItemId %}
+                    <a type="button" class="btn btn-info" disabled>
+                        <i class="fa fa-paper-plane"></i> Displaying Live Email
+                    </a>
+                {% else %}
+                    <a href="{{ liveItemUrl }}" type="button" class="btn btn-info">
+                        <i class="fa fa-eye"></i> View Live Email
+                    </a>
+                {% endif %}
+            {% endif %}
+
+
+            <a href="{{ editTemplateUrl }}{{- renderedItemId -}}" class="btn btn-warning"><i class="fa fa-edit"></i>
+                Edit This Template</a>
+            <a class="btn btn-danger" data-toggle="modal" data-target="#exampleModalCenter"><i
+                    class="fa fa-trash-o"></i></a>
+
+        </div>
+    </div>
+
+    <div class='panel-body'>
+        <div class="grid ">
+            <div class="grid-table table-responsive">
+                <table class="table">
+                    <thead>
+                        <th>Title</th>
+                        <th>Priority</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Campus</th>
+                    </thead>
+                    <tbody>
+                        <th scope="row">{{ renderedItemTest.Title }}</th>
+                        <td>{{ renderedItemTest.Priority }}</td>
+                        <td>{{ renderedItemTest.StartDateTime | Date:'sd' }}</td>
+                        <td>{{ renderedItemTest.ExpireDateTime | Date:'sd' }}</td>
+                        <td>{{ renderedItemTest | Attribute:'Campus','Name' }}</td>
+                    </tbody>
+                </table>
+
+                {% capture emailContent %}
+                {[ groupschedulecontent channelid:'{{ channelId }}' campusguid:'{{ campusGuid }}' contentitemid:'{{ renderedItemId }}' ]}
+                {% endcapture %}
+                {{ emailContent | Replace:'href=','hrefbroken=' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Delete item: {{ renderedItemTest.Title }}</h5>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" js="template-delete"><i class="fa fa-trash-o"></i>
+                    Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function deleteConnectionItem(pInt) {
+        fetch(
+            "/api/ContentChannelItems/" + parseInt(pInt)
+            , {
+                method: "delete",
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(() => {
+                location.href = location.href.split('?')[0];
+            });
+    }
+
+    $('[js="template-delete"]').off('click');
+    $('[js="template-delete"]').click(function () {
+        deleteConnectionItem({{ renderedItemId }});
+    });
+</script>
