@@ -1,0 +1,2 @@
+# Moving-on-From-PCO-with-Customizable-Group-Scheduling-Emails
+ Giving ministry Pastors the ability to customize their emails gives each of them a voice in their emails instead of just a canned response. It also lets them inform their volunteers about exciting news, training videos, or what to expect this weekend without needing to reach out to anyone with administrative rights to change and update the email content.
