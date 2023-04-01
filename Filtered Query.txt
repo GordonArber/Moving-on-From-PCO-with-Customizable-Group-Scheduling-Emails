@@ -1,0 +1,63 @@
+{%- assign paramCampus = 'Global' | PageParameter:'Campus' -%}
+
+
+-- Handle Blank case from Block Parameterization
+Set @Title = Case when @Title = '' then null else @Title End;
+Set @ActiveOnDate = Case when @ActiveOnDate = '' then null else @ActiveOnDate End;
+
+Declare @CurrentPageRoute varchar(max) = '{{ "Global" | Page:"Url" | Split:"?" | First | SanitizeSql }}'
+
+Declare @ContentChannelId int = 13
+    --Content Channel Id that was set on the content channel
+Declare @ParamCampus varchar(max) = '{{ paramCampus }}'
+Set @ParamCampus = Case When @ParamCampus = '' Then null Else @ParamCampus End
+
+Declare @AttIdCampus        int = 41187
+    --Campus Content Item Attribute Id that was set on the content type
+
+Select
+    cci.Title
+    , cci.Priority
+    , cci.StartDateTime
+    , cci.ExpireDateTime
+    , cci.Id
+    , @CurrentPageRoute as [CurrentPageRoute]
+    , @ParamCampus as [ParamCampus]
+    , IsNull( cCampus.Name, 'All' ) as [Campus]
+    , IsNull( cCampus.Guid, null ) as [CampusGuid]
+    , @Title as [TitleFilter]
+    , @ActiveOnDate as [ActiveOnDateFilter]
+From [ContentChannelItem] cci
+    Left Join [AttributeValue] avCampus
+        on avCampus.EntityId = cci.Id
+        and avCampus.AttributeId = @AttIdCampus
+    Left Join [Campus] cCampus
+        on cCampus.Guid =  avCampus.Value 
+        
+Where cci.ContentChannelId = @ContentChannelId
+    and ( -- Param is not defined
+        @ActiveOnDate is null
+        or (
+            -- or param matches
+            (
+                -- StartDate undefined, or before ActiveOnDate
+                cci.StartDateTime is null
+                or Convert( Date, cci.StartDateTime ) <= @ActiveOnDate 
+            ) and (
+                -- ExpireDate undefined, or before ActiveOnDate
+                cci.ExpireDateTime is null
+                or @ActiveOnDate <= Convert( Date, cci.ExpireDatetime )
+            )
+        )
+    ) and (
+        @Title is null
+        or cci.Title like Concat( '%', @Title, '%' )
+    ) and (
+        @ParamCampus is null
+        or @ParamCampus = avCampus.Value 
+        or IsNull( avCampus.Value, '' ) = ''
+    )
+Order by
+    cci.Priority desc
+    , cci.StartDatetime desc
+    , cci.Id desc
