@@ -8,4 +8,4 @@ Giving ministry Pastors the ability to customize their emails gives each of them
 
 ## Implementation
 
-You can find the implimentation on [Rock's recipe page...](https://community.rockrms.com/recipes/317/moving-on-from-pco-with-customizable-group-scheduling-emails).
+You can find the implimentation on [Rock's recipe page...](https://community.rockrms.com/recipes/317/moving-on-from-pco-with-customizable-group-scheduling-emails)
