@@ -1,0 +1,65 @@
+{%- capture ignore -%}
+
+{% assign activeondate = activeondate | WithFallback:'','' %}
+{% assign title = title | WithFallback:'','' %}
+{% assign campusguid = campusguid | WithFallback:'','' %}
+
+
+{%- sql Title:'{{ title }}' ActiveOnDate:'{{ activeondate }}' ParamCampus:'{{ campusguid }}' ContentChannelId:'{{ channelid }}' -%}
+
+Set @Title = Case when @Title = '' then null else @Title End;
+Set @ActiveOnDate = Case when @ActiveOnDate = '' then Format( GetDate(), 'yyyy-MM-dd' ) else @ActiveOnDate End;
+--Set @ActiveOnDate = Case when @ActiveOnDate = '' then null else @ActiveOnDate End;
+Set @ParamCampus = Case when @ParamCampus = '' then null else @ParamCampus End;
+Set @ContentChannelId = Case when @ContentChannelId = '' then null else @ContentChannelId End;
+
+--Declare @ContentChannelId int = {{ 'Global' | Page:'Id' | FromCache:'Page' | Attribute:'ContentChannel','Id' | Default:channelid | AsInteger | Default:'null' }}
+
+Declare @AttIdCampus        int = 41187
+
+Select
+    cci.Title
+    , cci.Priority
+    , cci.StartDateTime
+    , cci.ExpireDateTime
+    , cci.Id
+    , IsNull( cCampus.Name, 'All' ) as [Campus]
+    , @Title as [TitleFilter]
+    , @ActiveOnDate as [ActiveOnDateFilter]
+From [ContentChannelItem] cci
+    Left Join [AttributeValue] avCampus
+        on avCampus.EntityId = cci.Id
+        and avCampus.AttributeId = @AttIdCampus
+    Left Join [Campus] cCampus
+        on cCampus.Guid = dbo.udf_toUniqueIdentifier( avCampus.Value )
+        
+Where cci.ContentChannelId = @ContentChannelId
+    and (
+        @ActiveOnDate is null or (
+        -- @ActiveOnDate will always have a value (either today or param)
+        (
+            -- StartDate undefined, or before ActiveOnDate
+            cci.StartDateTime is null
+            or Convert( Date, cci.StartDateTime ) <= @ActiveOnDate 
+        ) and (
+            -- ExpireDate undefined, or before ActiveOnDate
+            cci.ExpireDateTime is null
+            or @ActiveOnDate <= Convert( Date, cci.ExpireDatetime )
+        )
+        )
+    ) and (
+        @Title is null
+        or cci.Title like Concat( '%', @Title, '%' )
+    ) and (
+        @ParamCampus is null
+        or @ParamCampus = dbo.udf_toUniqueIdentifier( avCampus.Value )
+        or IsNull( avCampus.Value, '' ) = ''
+    )
+Order by
+    cci.Priority desc
+    , cci.StartDatetime desc
+    , cci.Id desc
+{% endsql %}
+
+{%- endcapture -%}
+{{- results | First | Property:'Id' -}}
