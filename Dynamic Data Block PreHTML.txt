@@ -1,0 +1,12 @@
+{%- assign newTemplateUrl = 966 | PageRoute:'ContentItemId=0' -%} {% comment %}Change this Id to the Id of the child of this page{% endcomment %}
+        
+<div class="panel panel-block">
+    <div class="panel-heading">
+
+        <h3 class="panel-title">
+            <i class="fa fa-mail-bulk"></i>
+            LifeKids - Schedule
+        </h3>
+        <a href="{{- newTemplateUrl -}}" class="btn btn-success btn-add-new-template pull-right"><i
+                class="fa fa-plus"></i> Add New Template</a>
+    </div>
