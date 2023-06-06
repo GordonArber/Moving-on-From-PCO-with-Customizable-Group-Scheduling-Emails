@@ -15,7 +15,7 @@ Set @ContentChannelId = Case when @ContentChannelId = '' then null else @Content
 
 --Declare @ContentChannelId int = {{ 'Global' | Page:'Id' | FromCache:'Page' | Attribute:'ContentChannel','Id' | Default:channelid | AsInteger | Default:'null' }}
 
-Declare @AttIdCampus        int = 12563
+Declare @AttIdCampus        int = 41187
 
 Select
     cci.Title
@@ -31,7 +31,7 @@ From [ContentChannelItem] cci
         on avCampus.EntityId = cci.Id
         and avCampus.AttributeId = @AttIdCampus
     Left Join [Campus] cCampus
-        on cCampus.Guid = avCampus.Guid
+        on cCampus.Guid = try_convert( uniqueidentifier, avCampus.Value )
         
 Where cci.ContentChannelId = @ContentChannelId
     and (
@@ -52,7 +52,7 @@ Where cci.ContentChannelId = @ContentChannelId
         or cci.Title like Concat( '%', @Title, '%' )
     ) and (
         @ParamCampus is null
-        --or @ParamCampus = avCampus.Guid
+        or @ParamCampus = try_convert( uniqueidentifier, avCampus.Value )
         or IsNull( avCampus.Value, '' ) = ''
     )
 Order by
