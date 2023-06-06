@@ -1,18 +1,17 @@
 {%- assign paramCampus = 'Global' | PageParameter:'Campus' -%}
 
-
 -- Handle Blank case from Block Parameterization
 Set @Title = Case when @Title = '' then null else @Title End;
 Set @ActiveOnDate = Case when @ActiveOnDate = '' then null else @ActiveOnDate End;
 
 Declare @CurrentPageRoute varchar(max) = '{{ "Global" | Page:"Url" | Split:"?" | First | SanitizeSql }}'
 
-Declare @ContentChannelId int = 13
+Declare @ContentChannelId int = 9
     --Content Channel Id that was set on the content channel
 Declare @ParamCampus varchar(max) = '{{ paramCampus }}'
 Set @ParamCampus = Case When @ParamCampus = '' Then null Else @ParamCampus End
 
-Declare @AttIdCampus        int = 41187
+Declare @AttIdCampus        int = 12563
     --Campus Content Item Attribute Id that was set on the content type
 
 Select
@@ -32,8 +31,8 @@ From [ContentChannelItem] cci
         on avCampus.EntityId = cci.Id
         and avCampus.AttributeId = @AttIdCampus
     Left Join [Campus] cCampus
-        on cCampus.Guid =  avCampus.Value 
-        
+        on cCampus.Guid =  try_convert( uniqueidentifier, avCampus.Value )
+
 Where cci.ContentChannelId = @ContentChannelId
     and ( -- Param is not defined
         @ActiveOnDate is null
@@ -54,7 +53,7 @@ Where cci.ContentChannelId = @ContentChannelId
         or cci.Title like Concat( '%', @Title, '%' )
     ) and (
         @ParamCampus is null
-        or @ParamCampus = avCampus.Value 
+        or @ParamCampus = try_convert( uniqueidentifier, avCampus.Value )
         or IsNull( avCampus.Value, '' ) = ''
     )
 Order by
